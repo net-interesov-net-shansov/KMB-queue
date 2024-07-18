@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="scrollable-content">
+  <h1>{{ table.name }} таблица</h1>
+  <table>
+    <tr>
+      {% for column in table.columns %}
+        <th>{{ column.name }}</th>
+      {% endfor %}
+    </tr>
+    {% for row in rows %}
+      <tr>
+        {% for column in table.columns %}
+          <td>{{ row[column.name] }}</td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </table>
+  <p><a href="{{ url_for('add_row', table_name=table.name) }}">Добавить строку</a></p>
+</div>
+	
+{% endblock %}

@@ -1,0 +1,19 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+    
+<form action="/login" method="post" id="login_form">
+    <div class="form-container">
+        <div>
+            <input autocomplete="off" autofocus class="form-control" name="username" placeholder="Логин" type="text" id="user">
+        </div>
+        <div>
+            <input class="form-control" name="password" placeholder="Пароль" type="password" id="password">
+        </div>
+        <button class="btn btn-primary" type="submit" id="button">Войти</button>
+        {{error}}
+    </div>
+</form>
+    
+{% endblock %}

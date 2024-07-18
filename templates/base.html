@@ -1,0 +1,40 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>КМБ4</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='Icon.ico') }}">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <!-- кастомные стили -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div style="position: static;">
+      <nav class="navbar navbar-expand-lg">
+
+        <div class="navbar-logo">
+          <img id="logo" src="{{ url_for('static', filename='Logo.svg') }}" draggable="false" onclick="location.href='/'">
+        </div>
+
+        <div class="navbar-title">
+          <p id="title">Электронная очередь</p>
+        </div>
+
+        <div class="navbar-time">
+          <span id="time">Время</span>
+        </div>
+      </nav>
+    </div>
+    
+
+
+    <div id="page-content">
+      {% block content %}
+      {% endblock %}
+    </div>
+    <script type="module" src="{{url_for('static', filename='timeProcessing.js')}}"></script>
+</body>
+</html>
