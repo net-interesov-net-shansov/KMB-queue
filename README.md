@@ -46,7 +46,7 @@
  - [manager.js](/static/manager.js)<br>
  Отправка данных клиента в базу данных.
  - [monitorScripts.js](/static/monitorScripts.js)<br>
- Вывод приглашённых приглашённых клиентов на экран.
+ Вывод приглашённых клиентов на экран.
  - [operator.js](/static/operator.js)<br>
  Вывод очереди ожидания оператору. Возможность просмотра информации и приглашения клиента.
  - [timeProcessing.js](/static/timeProcessing.js)<br>
