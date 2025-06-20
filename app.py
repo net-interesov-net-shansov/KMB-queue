@@ -4,6 +4,8 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date
 from flask import Flask, render_template, request,redirect,url_for
 import mimetypes
+import os
+import socket
 
 # Создаем приложение Flask
 app = Flask(__name__)
@@ -104,11 +106,45 @@ def save_queue_item(number, username, birthdate_str, operation, phone, userLastn
     db.session.add(new_item)
     db.session.commit()
 
+def get_latest_number():
+    """Безопасно получаем последний номер из базы данных"""
+    try:
+        latest_item = db.session.query(QueueModel).order_by(QueueModel.id.desc()).first()
+        if latest_item:
+            return latest_item.number
+        else:
+            return None
+    except Exception as e:
+        print(f"Ошибка при получении последнего номера: {e}")
+        return None
+
+def initialize_database():
+    """Инициализация базы данных"""
+    db_path = 'queue.db'
+    
+    # Проверяем существует ли файл базы данных
+    if not os.path.exists(db_path):
+        print("База данных не найдена. Создаем новую...")
+        db.create_all()
+        print("База данных создана успешно!")
+    else:
+        print("База данных найдена. Проверяем структуру...")
+        try:
+            # Проверяем доступность таблиц
+            db.session.execute(db.text("SELECT name FROM sqlite_master WHERE type='table';")).fetchall()
+            print("Структура базы данных корректна.")
+        except Exception as e:
+            print(f"Ошибка в структуре базы данных: {e}")
+            print("Пересоздаем таблицы...")
+            db.create_all()
+            print("Таблицы пересозданы успешно!")
 
 # Список операторов
 operators = []
 # очередь пользователей
 queue = []
+# Глобальная переменная для номера клиента
+client_number = 1
 
 
 # Работаем с socket
@@ -135,21 +171,6 @@ def leave_queue(data):
     queue.remove(data['number'])
     emit('queue_update', {'queue': queue}, broadcast=True)
 
-def get_latest_number():
-    with app.app_context():
-        latest_item = db.session.query(QueueModel).order_by(QueueModel.id.desc()).first()
-        if latest_item:
-            return latest_item.number
-        else:
-            return None
-
-
-
-client_number = get_latest_number()
-if client_number == None: client_number = 1
-else: client_number += 1
-print(client_number)
-
 mimetypes.add_type('audio/mpeg', '.mp3')
 
 # Добавление клиента в очередь
@@ -165,7 +186,6 @@ def pers(json):
     
     current_date_unformed = date.today()
     current_date = current_date_unformed.strftime('%d.%m')
-
 
     # Сохраните нового клиента в базе данных.
     save_queue_item(client_number, username, birthdate, operation, phone, userLastname, current_date)
@@ -311,17 +331,20 @@ def add_row(table_name):
         return redirect(url_for("show_table", table_name=table_name))
     return render_template("add.html", table=table)
 
-# if __name__ == '__main__':
-#     with app.app_context():
-#         db.create_all()
-#     socketio.run(app,'172.10.30.89', port=5000)
+hostname = socket.gethostname()
+local_ip = socket.gethostbyname(hostname)
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
-    socketio.run(app, host='172.10.31.83', port=8080)
-
-# if __name__ == '__main__':
-#     with app.app_context():
-#         db.create_all()
-#     socketio.run(app)
+        # Инициализируем базу данных
+        initialize_database()
+        
+        # Теперь безопасно получаем последний номер клиента
+        latest_number = get_latest_number()
+        if latest_number is None:
+            client_number = 1
+        else:
+            client_number = latest_number + 1
+        print(f"Начальный номер клиента: {client_number}")
+        
+    socketio.run(app, host=(local_ip), port=8080, debug=True)
