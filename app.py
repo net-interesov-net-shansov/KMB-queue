@@ -258,8 +258,11 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        # Проверьте правильность имени пользователя и пароля
-        for operator in operators:
+        # Always fetch the latest operators from the database
+        with app.app_context():
+            operators_data = get_operator()
+        current_operators = [{'id': item.id, 'username': item.username, 'password': item.password, 'operations': item.operations} for item in operators_data]
+        for operator in current_operators:
             if operator['username'] == username and operator['password'] == password:
                 if (operator['username'] == 'Manager1' and operator['password'] == password) or (operator['username'] == 'Manager2' and operator['password'] == password):
                     return redirect(url_for('manager_page', operator_id=operator['id']))
@@ -280,22 +283,34 @@ def monitor():
 @app.route('/operator/<int:operator_id>')
 def operator_page(operator_id):
     with app.app_context():
+        operator = OperatorModel.query.get(operator_id)
         operators_data = OperationModel.query.all()
     operations = [{'id': item.id, 'operation_name': item.operation_name, 'operation_code': item.operation_code, 'cabinet': item.cabinet} for item in operators_data]
-    operator = next((o for o in operators if o['id'] == operator_id), None)
     if operator:
-        return render_template('operator.html', operator=operator, operations=operations)
+        operator_dict = {
+            'id': operator.id,
+            'username': operator.username,
+            'password': operator.password,
+            'operations': operator.operations
+        }
+        return render_template('operator.html', operator=operator_dict, operations=operations)
     else:
         return 'Operator not found', 404
-    
+
 @app.route('/manager/<int:operator_id>', methods=['GET', 'POST'])
 def manager_page(operator_id):
     with app.app_context():
+        operator = OperatorModel.query.get(operator_id)
         operators_data = OperationModel.query.all()
     operations = [{'id': item.id, 'operation_name': item.operation_name, 'operation_code': item.operation_code, 'cabinet': item.cabinet} for item in operators_data]
-    operator = next((o for o in operators if o['id'] == operator_id), None)
     if operator:
-        return render_template('manager.html', operator=operator, operations=operations)
+        operator_dict = {
+            'id': operator.id,
+            'username': operator.username,
+            'password': operator.password,
+            'operations': operator.operations
+        }
+        return render_template('manager.html', operator=operator_dict, operations=operations)
     else:
         return 'Operator not found', 404
 
@@ -331,8 +346,18 @@ def add_row(table_name):
         return redirect(url_for("show_table", table_name=table_name))
     return render_template("add.html", table=table)
 
-hostname = socket.gethostname()
-local_ip = socket.gethostbyname(hostname)
+def get_network_ip():
+    try:
+        # Подключаемся к внешнему DNS чтобы определить наш сетевой IP
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        network_ip = s.getsockname()[0]
+        s.close()
+        return network_ip
+    except Exception:
+        return "Не удалось определить IP"
+
+network_ip = get_network_ip()
 
 if __name__ == '__main__':
     with app.app_context():
@@ -347,4 +372,4 @@ if __name__ == '__main__':
             client_number = latest_number + 1
         print(f"Начальный номер клиента: {client_number}")
         
-    socketio.run(app, host=(local_ip), port=8080, debug=True)
+    socketio.run(app, host=(network_ip), port=8080, debug=True)
